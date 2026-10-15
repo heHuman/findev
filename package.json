@@ -1,0 +1,11 @@
+{
+  "name": "findev",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:wasm": "npm run build -w @findev/producer"
+  }
+}

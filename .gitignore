@@ -1,0 +1,3 @@
+node_modules/
+packages/producer/build/
+apps/dashboard/public/producer.wasm
