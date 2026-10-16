@@ -7,6 +7,6 @@
   ],
   "scripts": {
     "build:wasm": "npm run build -w @findev/producer",
-    "test": "npm test -w @findev/producer"
+    "test": "npm test --workspaces --if-present"
   }
 }
