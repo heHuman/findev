@@ -6,10 +6,10 @@ export const APP_NAME = 'Findev Dashboard';
 
 @Injectable({ providedIn: 'root' })
 export class AppTitleStrategy extends TitleStrategy {
-  private readonly title = inject(Title);
+  readonly #title = inject(Title);
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const pageTitle = this.buildTitle(snapshot);
-    this.title.setTitle(pageTitle ? pageTitle : APP_NAME);
+    this.#title.setTitle(pageTitle ? pageTitle : APP_NAME);
   }
 }
