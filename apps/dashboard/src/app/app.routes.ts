@@ -1,12 +1,13 @@
 import { Routes } from '@angular/router';
-import { Dashboard } from './dashboard/dashboard';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 export const routes: Routes = [
   // Don't see the point in makind dashboard lazily loaded as its the main page of the app
-  { path: '', component: Dashboard, title: 'Dashboard' },
+  { path: '', component: DashboardComponent, title: 'Dashboard' },
   {
     path: 'settings',
-    loadComponent: () => import('./settings/settings-component/settings').then((m) => m.Settings),
+    loadComponent: () =>
+      import('./settings/settings-component/settings.component').then((m) => m.SettingsComponent),
     title: 'Settings',
   },
   { path: '**', redirectTo: '' },

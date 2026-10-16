@@ -7,10 +7,10 @@ import { APP_NAME } from '../app-title-strategy';
 @Component({
   selector: 'app-shell',
   imports: [MatToolbarModule, MatButtonModule, RouterLink, RouterLinkActive, RouterOutlet],
-  templateUrl: './shell.html',
-  styleUrl: './shell.scss',
+  templateUrl: './shell.component.html',
+  styleUrl: './shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Shell {
-  protected readonly appName = APP_NAME;
+export class ShellComponent {
+  readonly appName = APP_NAME;
 }

@@ -5,11 +5,11 @@ import {
   ProducerSettings,
 } from '../producer-settings';
 import { ProducerSettingsStore } from '../producer-settings-store';
-import { Settings } from './settings';
+import { SettingsComponent } from './settings.component';
 
 type SettingKey = keyof ProducerSettings;
 
-describe('Settings', () => {
+describe('SettingsComponent', () => {
   // Valid settings that differ from the defaults in every field.
   const CUSTOM_SETTINGS: ProducerSettings = {
     instrumentCount: 12,
@@ -54,13 +54,13 @@ describe('Settings', () => {
     batchIntervalMs: String(settings.batchIntervalMs),
   });
 
-  let fixture: ComponentFixture<Settings>;
+  let fixture: ComponentFixture<SettingsComponent>;
   let store: ProducerSettingsStore;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({ imports: [Settings] });
+    TestBed.configureTestingModule({ imports: [SettingsComponent] });
     store = TestBed.inject(ProducerSettingsStore);
-    fixture = TestBed.createComponent(Settings);
+    fixture = TestBed.createComponent(SettingsComponent);
     await fixture.whenStable();
   });
 
@@ -201,7 +201,7 @@ describe('Settings', () => {
   it('resets the form to the defaults and applies them', async () => {
     store.apply(CUSTOM_SETTINGS);
     fixture.destroy();
-    fixture = TestBed.createComponent(Settings);
+    fixture = TestBed.createComponent(SettingsComponent);
     await fixture.whenStable();
 
     button('Reset to defaults').click();
@@ -218,7 +218,7 @@ describe('Settings', () => {
     await fixture.whenStable();
 
     fixture.destroy();
-    fixture = TestBed.createComponent(Settings);
+    fixture = TestBed.createComponent(SettingsComponent);
     await fixture.whenStable();
 
     expect(formValues()).toEqual(

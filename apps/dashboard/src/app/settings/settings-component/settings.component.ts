@@ -56,11 +56,11 @@ export const integerMask: MaskitoOptions = {
     DecimalPipe,
   ],
   providers: [{ provide: ErrorStateMatcher, useClass: ShowOnDirtyErrorStateMatcher }],
-  templateUrl: './settings.html',
-  styleUrl: './settings.scss',
+  templateUrl: './settings.component.html',
+  styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Settings {
+export class SettingsComponent {
   readonly #store = inject(ProducerSettingsStore);
 
   readonly limits = PRODUCER_SETTINGS_LIMITS;
