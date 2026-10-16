@@ -1,0 +1,23 @@
+{
+  "entries": ["assembly/index.ts"],
+  "targets": {
+    "debug": {
+      "outFile": "build/producer.debug.wasm",
+      "textFile": "build/producer.debug.wat",
+      "sourceMap": true,
+      "debug": true
+    },
+    "release": {
+      "outFile": "build/producer.wasm",
+      "textFile": "build/producer.wat",
+      "sourceMap": false,
+      "optimizeLevel": 3,
+      "shrinkLevel": 0,
+      "converge": false,
+      "noAssert": false
+    }
+  },
+  "options": {
+    "runtime": "stub"
+  }
+}
