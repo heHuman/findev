@@ -1,0 +1,27 @@
+<mat-toolbar class="toolbar">
+  <span class="brand">{{ appName }}</span>
+
+  <nav class="nav">
+    <a
+      mat-button
+      class="nav-link"
+      routerLink="/"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      >Dashboard</a
+    >
+    <a
+      mat-button
+      class="nav-link"
+      routerLink="/settings"
+      routerLinkActive="is-active"
+      >Settings</a
+    >
+  </nav>
+
+  <!-- the producer status badge goes here -->
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet />
+</main>

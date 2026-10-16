@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  gap: 8px 24px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  justify-content: space-between;
+  padding: 0 80px;
+}
+
+.brand {
+  font: var(--mat-sys-title-large);
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-link.is-active {
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 24px;
+}
