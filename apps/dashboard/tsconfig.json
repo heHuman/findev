@@ -12,7 +12,12 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    // Compiles the producer library's TS as app source. A package dependency would make the dev
+    // server pre-bundle it as an npm package, which fails on its extensionless `.ts` imports.
+    "paths": {
+      "@findev/producer": ["../../packages/producer/src/index.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

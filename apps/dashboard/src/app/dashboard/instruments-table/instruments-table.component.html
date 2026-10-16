@@ -1,0 +1,46 @@
+<div class="table" role="table">
+  <div class="header" role="rowgroup">
+    <div class="row" role="row">
+      <div class="cell" role="columnheader">Instrument</div>
+      <div class="cell numeric" role="columnheader">Last price</div>
+      <div class="cell numeric" role="columnheader">Spread</div>
+      <div class="cell numeric" role="columnheader">Volume</div>
+      <div class="cell numeric" role="columnheader">VWAP</div>
+      <div class="cell numeric" role="columnheader">Imbalance</div>
+    </div>
+  </div>
+
+  <div class="body" role="rowgroup">
+    <!-- No need in cdk-virtual-scroll for a list of 50 items -->
+    @for (row of rows(); track row.ticker) {
+      <div class="row" role="row">
+        <div class="cell ticker" role="cell">{{ row.ticker }}</div>
+        <div
+          class="cell numeric"
+          role="cell"
+        >
+          {{ row.lastPriceCents | price }}
+        </div>
+        <div
+          class="cell numeric"
+          role="cell"
+        >
+          {{ row.spreadCents | price }}
+        </div>
+        <div class="cell numeric" role="cell">{{ row.cumulativeVolume | number }}</div>
+        <div
+          class="cell numeric"
+          role="cell"
+        >
+          {{ row.vwapCents | price }}
+        </div>
+        <div
+          class="cell numeric"
+          role="cell"
+        >
+          {{ row.imbalance | imbalance }}
+        </div>
+      </div>
+    }
+  </div>
+</div>

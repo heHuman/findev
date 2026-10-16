@@ -1,0 +1,48 @@
+:host {
+  display: block;
+  --row-height: 36px;
+}
+
+.table {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  background-color: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-title-small);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  box-sizing: border-box;
+  height: var(--row-height);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.body .row:last-child {
+  border-bottom: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.numeric {
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticker {
+  font: var(--mat-sys-title-small);
+}
