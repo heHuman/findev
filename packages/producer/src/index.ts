@@ -15,6 +15,6 @@ export {
   ProducerError,
   type Producer,
   type ProducerDebug,
-  type ProducerExports,
+  type ProducerRawExports as ProducerExports,
   type ProducerImports,
-} from "./load";
+} from "./typed-adapter";

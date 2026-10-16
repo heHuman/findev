@@ -13,10 +13,20 @@
   "scripts": {
     "build": "asc --config asconfig.json --target release",
     "build:debug": "asc --config asconfig.json --target debug",
-    "typecheck": "tsc --noEmit -p src/tsconfig.json"
+    "build:all": "npm run build && npm run build:debug",
+    "typecheck": "tsc --noEmit -p src/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "pretest:watch": "npm run build",
+    "test:watch": "vitest",
+    "pretest:coverage": "npm run build",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "assemblyscript": "^0.28.20",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   }
 }

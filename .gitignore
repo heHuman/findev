@@ -1,3 +1,4 @@
 node_modules/
 packages/producer/build/
+packages/producer/coverage/
 apps/dashboard/public/producer.wasm
