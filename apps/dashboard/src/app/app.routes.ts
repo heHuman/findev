@@ -6,7 +6,7 @@ export const routes: Routes = [
   { path: '', component: Dashboard, title: 'Dashboard' },
   {
     path: 'settings',
-    loadComponent: () => import('./settings/settings').then((m) => m.Settings),
+    loadComponent: () => import('./settings/settings-component/settings').then((m) => m.Settings),
     title: 'Settings',
   },
   { path: '**', redirectTo: '' },

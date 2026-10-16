@@ -1,0 +1,35 @@
+<h1 class="page-title">Producer settings</h1>
+
+<form class="settings-form" [formGroup]="form" (ngSubmit)="apply()">
+  @for (field of fields; track field.key) {
+    <mat-form-field appearance="outline">
+      <mat-label>{{ field.label }}</mat-label>
+      <input
+        matInput
+        type="text"
+        inputmode="numeric"
+        [name]="field.key"
+        [formControlName]="field.key"
+        [maskito]="integerMask"
+      />
+      <mat-hint>Whole number, {{ limits[field.key].min }}–{{ limits[field.key].max }}</mat-hint>
+      <mat-error>{{ errorMessage(field.key) }}</mat-error>
+    </mat-form-field>
+  }
+
+  <p class="rate">
+    @if (nominalRate() !== null) {
+      ≈ {{ nominalRate() | number: '1.0-1' }} updates/s across all instruments
+    } @else {
+      Fix the values above to see the update rate
+    }
+  </p>
+
+  <div class="actions">
+    <button mat-flat-button type="submit" [disabled]="form.invalid">Apply</button>
+    <button mat-button type="button" (click)="resetToDefaults()">Reset to defaults</button>
+    @if (justApplied()) {
+      <span class="status" role="status">Applied: new run started</span>
+    }
+  </div>
+</form>

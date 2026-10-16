@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.page-title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-headline-small);
+}
+
+.intro {
+  margin: 0 0 24px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 400px;
+}
+
+.rate {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status {
+  margin-left: 8px;
+  color: var(--mat-sys-primary);
+}
