@@ -19,7 +19,9 @@
     >
   </nav>
 
-  <!-- the producer status badge goes here -->
+  <span class="status-badge" [class.is-error]="producer.status() === 'error'">
+    Producer: {{ statusLabels[producer.status()] }}
+  </span>
 </mat-toolbar>
 
 <main class="content">

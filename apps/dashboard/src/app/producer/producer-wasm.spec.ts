@@ -2,7 +2,6 @@
 import { readFileSync } from 'node:fs';
 import { TICKERS } from '@findev/producer';
 import { ProducerSettings } from '../settings/producer-settings';
-import { deriveRow } from './metrics';
 import { ProducerController, scheduleInterval } from './producer-controller';
 import { loadWasmEngine } from './producer-engine';
 import { ProducerEvent, SnapshotEvent } from './producer-events';
@@ -40,9 +39,7 @@ describe('ProducerController with the real Wasm engine', () => {
     await vi.advanceTimersByTimeAsync(BATCH_COUNT * SETTINGS.batchIntervalMs);
 
     const last = events.filter((event) => event.type === 'snapshot').at(-1) as SnapshotEvent;
-    const rows = TICKERS.slice(0, SETTINGS.instrumentCount).map((ticker, i) =>
-      deriveRow(last.data, i, ticker),
-    );
+    const rows = last.metrics;
     const totalVolume = rows.reduce((sum, row) => sum + row.cumulativeVolume, 0);
 
     expect(last).toMatchObject({
@@ -50,6 +47,7 @@ describe('ProducerController with the real Wasm engine', () => {
       batches: BATCH_COUNT,
       totalUpdates: BATCH_COUNT * SETTINGS.updatesPerBatch,
     });
+    expect(rows.map((row) => row.ticker)).toEqual(TICKERS.slice(0, SETTINGS.instrumentCount));
     expect(totalVolume).toBeGreaterThanOrEqual(last.totalUpdates);
     for (const row of rows) {
       expect(row.spreadCents).toBeGreaterThan(0);

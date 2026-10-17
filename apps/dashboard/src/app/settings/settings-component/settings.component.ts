@@ -19,6 +19,7 @@ import {
   PRODUCER_SETTINGS_LIMITS,
   ProducerSettings,
 } from '../producer-settings';
+import { ProducerService } from '../../producer/producer.service';
 import { ProducerSettingsStore } from '../producer-settings-store';
 import { ErrorStateMatcher, ShowOnDirtyErrorStateMatcher } from '@angular/material/core';
 
@@ -62,6 +63,7 @@ export const integerMask: MaskitoOptions = {
 })
 export class SettingsComponent {
   readonly #store = inject(ProducerSettingsStore);
+  readonly #producer = inject(ProducerService);
 
   readonly limits = PRODUCER_SETTINGS_LIMITS;
   readonly integerMask = integerMask;
@@ -125,7 +127,7 @@ export class SettingsComponent {
   }
 
   #applySettings(settings: ProducerSettings): void {
-    this.#store.apply(settings);
+    this.#producer.apply(settings);
     this.form.markAsPristine();
     this.justApplied.set(true);
   }

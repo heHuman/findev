@@ -1,3 +1,26 @@
 <h1 class="page-title">Market dashboard</h1>
 
-<app-instruments-table [rows]="rows()" />
+<div class="producer-bar">
+  <p class="status-line">
+    Status: {{ statusLabels[producer.status()] }} · Run {{ producer.runId() }} ·
+    {{ producer.totalUpdates() | number }} updates in {{ producer.batches() | number }} batches
+  </p>
+  <button
+    mat-stroked-button
+    type="button"
+    class="pause-toggle"
+    [disabled]="!canTogglePause()"
+    (click)="togglePause()"
+  >
+    {{ producer.status() === 'paused' ? 'Resume' : 'Pause' }}
+  </button>
+</div>
+
+@if (producer.status() === 'error') {
+  <div class="error" role="alert">
+    <span class="error-message">{{ producer.errorMessage() }}</span>
+    <button mat-flat-button type="button" (click)="producer.retry()">Retry</button>
+  </div>
+}
+
+<app-instruments-table [rows]="producer.instruments()" />

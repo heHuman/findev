@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideFakeProducerWorker } from '../../producer/testing/fake-producer-worker';
 import {
   DEFAULT_PRODUCER_SETTINGS,
   PRODUCER_SETTINGS_LIMITS,
@@ -56,9 +57,11 @@ describe('SettingsComponent', () => {
 
   let fixture: ComponentFixture<SettingsComponent>;
   let store: ProducerSettingsStore;
+  let fakes: ReturnType<typeof provideFakeProducerWorker>;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({ imports: [SettingsComponent] });
+    fakes = provideFakeProducerWorker();
+    TestBed.configureTestingModule({ imports: [SettingsComponent], providers: fakes.providers });
     store = TestBed.inject(ProducerSettingsStore);
     fixture = TestBed.createComponent(SettingsComponent);
     await fixture.whenStable();
@@ -184,16 +187,21 @@ describe('SettingsComponent', () => {
     expect(text('.status')).toBe('');
   });
 
-  it('applies the form values when Apply is clicked', async () => {
+  it('applies the form values and starts a run with them when Apply is clicked', async () => {
     await type('instrumentCount', CUSTOM_SETTINGS.instrumentCount);
     await type('batchIntervalMs', CUSTOM_SETTINGS.batchIntervalMs);
     button('Apply').click();
     await fixture.whenStable();
 
-    expect(store.appliedSettings()).toEqual({
+    const expected: ProducerSettings = {
       ...DEFAULT_PRODUCER_SETTINGS,
       instrumentCount: CUSTOM_SETTINGS.instrumentCount,
       batchIntervalMs: CUSTOM_SETTINGS.batchIntervalMs,
+    };
+    expect(store.appliedSettings()).toEqual(expected);
+    expect(fakes.workers.at(-1)!.posted.at(-1)).toMatchObject({
+      type: 'start',
+      settings: expected,
     });
     expect(text('.status')).toBe(APPLIED_STATUS);
   });

@@ -1,20 +1,30 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { ProducerSettingsStore } from '../settings/producer-settings-store';
-import { emptyInstrumentRows } from './instrument-row';
+import { MatButtonModule } from '@angular/material/button';
+import { PRODUCER_STATUS_LABELS, ProducerService } from '../producer/producer.service';
 import { InstrumentsTableComponent } from './instruments-table/instruments-table.component';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [InstrumentsTableComponent],
+  imports: [InstrumentsTableComponent, MatButtonModule, DecimalPipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
-  readonly #settingsStore = inject(ProducerSettingsStore);
+  readonly producer = inject(ProducerService);
+  readonly statusLabels = PRODUCER_STATUS_LABELS;
 
-  // TODO: Empty rows for the applied instrument count. The producer step replaces this with live rows.
-  readonly rows = computed(() =>
-    emptyInstrumentRows(this.#settingsStore.appliedSettings().instrumentCount),
-  );
+  readonly canTogglePause = computed(() => {
+    const status = this.producer.status();
+    return status === 'running' || status === 'paused';
+  });
+
+  togglePause(): void {
+    if (this.producer.status() === 'paused') {
+      this.producer.resume();
+    } else {
+      this.producer.pause();
+    }
+  }
 }

@@ -27,6 +27,20 @@
   color: var(--mat-sys-on-secondary-container);
 }
 
+.status-badge {
+  padding: 2px 12px;
+  border-radius: 12px;
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-label-large);
+  white-space: nowrap;
+
+  &.is-error {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
 .content {
   box-sizing: border-box;
   width: 100%;
