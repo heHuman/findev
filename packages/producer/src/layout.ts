@@ -10,8 +10,8 @@ export const FIELD_OFFSETS = {
   askQty: 6,
 } as const;
 
+// No upper limit on instruments: init grows Wasm memory as needed (12 bytes per instrument, 4 GiB max).
 export const MIN_INSTRUMENTS = 1;
-export const MAX_INSTRUMENTS = 50;
 export const MIN_BATCH = 1;
 export const MAX_BATCH = 1000;
 
@@ -22,9 +22,11 @@ export const ProducerErrorCode = {
   InstrumentIndex: -4,
   MidPriceRange: -5,
   Seed: -6,
+  OutOfMemory: -7,
 } as const;
 export type ProducerErrorCode = (typeof ProducerErrorCode)[keyof typeof ProducerErrorCode];
 
+/** Named tickers of the first 50 instruments. `tickerOf(index)` covers every index. */
 export const TICKERS: readonly string[] = Object.freeze([
   "ALFA", "BETA", "GAMA", "DLTA", "EPSI", "ZETA", "ETAX", "THTA", "IOTA", "KAPA",
   "LMDA", "MUON", "NUXI", "OMCR", "PIXL", "RHOX", "SIGM", "TAUX", "UPSL", "PHIX",

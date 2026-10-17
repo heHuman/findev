@@ -24,7 +24,6 @@ export const MAX_BOOK_QTY: i32 = 5_000;
 // Each trade is for [1, 500] units
 export const MAX_TRADE_QTY: i32 = 500;
 
-export const MAX_INSTRUMENTS: i32 = 50;
 export const MAX_BATCH: i32 = 1000;
 
 // One trade update has 7 consecutive i32 values in the output buffer
@@ -37,19 +36,42 @@ const F_ASK: i32 = 4;
 const F_BID_QTY: i32 = 5;
 const F_ASK_QTY: i32 = 6;
 
-// Preallocated memory
+// Memory
 
 const I32_BYTES: i32 = 4;
 const OUT_BYTES: i32 = MAX_BATCH * TRADE_UPDATE_I32_FIELD_COUNT * I32_BYTES;
-const STATE_BYTES: i32 = MAX_INSTRUMENTS * I32_BYTES;
 
-// Output buffers
+// Output buffer: static, fixed size (MAX_BATCH updates)
 export const OUT_BUFFER_PTR: usize = memory.data(OUT_BYTES);
-const MID_PRICE_PTR: usize = memory.data(STATE_BYTES);
-const BID_QTY_PTR: usize = memory.data(STATE_BYTES);
-const ASK_QTY_PTR: usize = memory.data(STATE_BYTES);
+
+// Per-instrument state: three i32 arrays (mid price, bid qty, ask qty) laid out back to back
+// for `instrumentCount` entries, starting right after all static data. Nothing else uses that
+// memory: with `--runtime stub` and no allocations in this module, the heap stays empty.
+// The region only ever grows: an init with the same or a smaller count reuses it.
+const STATE_ARRAY_COUNT: u64 = 3;
+const STATE_BASE: usize = (__heap_base + 15) & ~15; // 16-byte aligned
+const PAGE_BYTES: u64 = 65_536;
+const MAX_MEMORY_BYTES: u64 = 65_536 * PAGE_BYTES; // 4 GiB: all that 32-bit Wasm can address
+
+let MID_PRICE_PTR: usize = STATE_BASE;
+let BID_QTY_PTR: usize = STATE_BASE;
+let ASK_QTY_PTR: usize = STATE_BASE;
 
 let instrumentCount: i32 = 0;
+
+/**
+ * Makes sure memory can hold the state for `count` instruments, growing it if needed.
+ * Returns false, without changing anything, when it can't. Only touches the memory size,
+ * so the current run keeps working either way. The math is in u64, so no count can overflow it.
+ */
+export function reserveStateMemory(count: i32): bool {
+  const stateEnd: u64 = <u64>STATE_BASE + <u64>count * STATE_ARRAY_COUNT * <u64>I32_BYTES;
+  if (stateEnd > MAX_MEMORY_BYTES) return false;
+  const neededPages = <i32>((stateEnd + PAGE_BYTES - 1) / PAGE_BYTES);
+  const currentPages = memory.size();
+  if (neededPages > currentPages && memory.grow(neededPages - currentPages) < 0) return false;
+  return true;
+}
 
 export function getInstrumentCount(): i32 {
   return instrumentCount;
@@ -88,15 +110,19 @@ function maxSpreadForMidPrice(midPriceCents: i32): i32 {
   return max(1, bpsOfValueToCents(midPriceCents, MAX_SPREAD_BPS));
 }
 
+/** Starts a new run. Call `reserveStateMemory(newInstrumentCount)` first and only restart if it succeeded. */
 export function restart(newInstrumentCount: i32, newSeed: i64): void {
   seedRandom(newSeed);
   instrumentCount = newInstrumentCount;
 
-  memory.fill(OUT_BUFFER_PTR, 0, OUT_BYTES);
-  memory.fill(MID_PRICE_PTR, 0, STATE_BYTES);
-  memory.fill(BID_QTY_PTR, 0, STATE_BYTES);
-  memory.fill(ASK_QTY_PTR, 0, STATE_BYTES);
+  const arrayBytes = <usize>newInstrumentCount * <usize>I32_BYTES;
+  MID_PRICE_PTR = STATE_BASE;
+  BID_QTY_PTR = MID_PRICE_PTR + arrayBytes;
+  ASK_QTY_PTR = BID_QTY_PTR + arrayBytes;
 
+  memory.fill(OUT_BUFFER_PTR, 0, OUT_BYTES);
+
+  // Every state entry is drawn here, so nothing from a previous run survives
   for (let i = 0; i < newInstrumentCount; i++) {
     setAt(MID_PRICE_PTR, i, getRandomIntInRange(INITIAL_MID_PRICE_MIN_CENTS, INITIAL_MID_PRICE_MAX_CENTS));
     setAt(BID_QTY_PTR, i, getRandomIntInRange(0, INITIAL_BOOK_QTY_MAX));

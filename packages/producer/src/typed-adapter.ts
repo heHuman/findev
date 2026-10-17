@@ -1,6 +1,5 @@
 import {
   MAX_BATCH,
-  MAX_INSTRUMENTS,
   MIN_BATCH,
   MIN_INSTRUMENTS,
   ProducerErrorCode,
@@ -10,7 +9,6 @@ import {
 export interface ProducerRawExports {
   memory: WebAssembly.Memory;
   MAX_BATCH: WebAssembly.Global;
-  MAX_INSTRUMENTS: WebAssembly.Global;
   TRADE_UPDATE_I32_FIELD_COUNT: WebAssembly.Global;
   MIN_MID_PRICE_CENTS: WebAssembly.Global;
   init(instrumentCount: number, seed: number): number;
@@ -161,7 +159,7 @@ function checkExports(raw: WebAssembly.Exports): ProducerRawExports {
   if (!(raw["memory"] instanceof WebAssembly.Memory)) throw new Error(`Producer Wasm does not export its memory`);
 
   // Keyed by the Wasm export name; values are the layout.ts constants they must match.
-  const expected = { MAX_BATCH, MAX_INSTRUMENTS, TRADE_UPDATE_I32_FIELD_COUNT };
+  const expected = { MAX_BATCH, TRADE_UPDATE_I32_FIELD_COUNT };
   for (const [name, value] of Object.entries(expected)) {
     const global = raw[name];
     const actual = global instanceof WebAssembly.Global ? global.value : undefined;
@@ -172,25 +170,33 @@ function checkExports(raw: WebAssembly.Exports): ProducerRawExports {
   return raw as unknown as ProducerRawExports;
 }
 
+const MAX_I32 = 2 ** 31 - 1;
+
 function wrap(wasm: ProducerRawExports): Producer {
   const ptr = wasm.getOutputBuffer();
-  // A view over the whole output buffer. Memory never grows today, but if it ever
-  // did, the old ArrayBuffer would be detached, so recreate the view when it changes.
-  let view = new Int32Array(wasm.memory.buffer, ptr, MAX_BATCH * TRADE_UPDATE_I32_FIELD_COUNT);
+  // A view over the whole output buffer. `init` grows memory when it needs room for more
+  // instruments, and growing detaches the old ArrayBuffer, so the view is recreated
+  // whenever `memory.buffer` has changed. The debug hooks go through Wasm calls, not views.
+  const outputView = () => new Int32Array(wasm.memory.buffer, ptr, MAX_BATCH * TRADE_UPDATE_I32_FIELD_COUNT);
+  let view = outputView();
+  const refreshView = () => {
+    if (view.buffer !== wasm.memory.buffer) view = outputView();
+  };
   const minMidPriceCents = wasm.MIN_MID_PRICE_CENTS.value as number;
 
   return {
     init(instrumentCount, seed) {
       const value = requireInteger(instrumentCount, ProducerErrorCode.InstrumentCount);
+      // Wasm takes an i32, so a larger count would wrap around. It could never fit in memory anyway.
+      if (value > MAX_I32) throw new ProducerError(ProducerErrorCode.OutOfMemory, describe(ProducerErrorCode.OutOfMemory, value));
       check(wasm.init(value, seed), instrumentCount, seed);
+      refreshView(); // a failed init never grows memory, so only a successful one needs this
     },
 
     simulateTradeBatch(batchSize) {
       const value = requireInteger(batchSize, ProducerErrorCode.BatchSize);
       const count = check(wasm.simulateTradeBatch(value), batchSize);
-      if (view.buffer !== wasm.memory.buffer) {
-        view = new Int32Array(wasm.memory.buffer, ptr, MAX_BATCH * TRADE_UPDATE_I32_FIELD_COUNT);
-      }
+      refreshView();
       return view.subarray(0, count * TRADE_UPDATE_I32_FIELD_COUNT);
     },
 
@@ -227,7 +233,7 @@ function wrap(wasm: ProducerRawExports): Producer {
   function describe(code: ProducerErrorCode, value: number): string {
     switch (code) {
       case ProducerErrorCode.InstrumentCount:
-        return `instrumentCount must be an integer from ${MIN_INSTRUMENTS} to ${MAX_INSTRUMENTS}, got ${value}`;
+        return `instrumentCount must be an integer of at least ${MIN_INSTRUMENTS}, got ${value}`;
       case ProducerErrorCode.BatchSize:
         return `batchSize must be an integer from ${MIN_BATCH} to ${MAX_BATCH}, got ${value}`;
       case ProducerErrorCode.NotInitialized:
@@ -238,6 +244,8 @@ function wrap(wasm: ProducerRawExports): Producer {
         return `mid price must be an integer of at least ${minMidPriceCents} cents (and within the module's maximum), got ${value}`;
       case ProducerErrorCode.Seed:
         return `seed must be an integer from 0 to Number.MAX_SAFE_INTEGER (2^53 - 1), got ${value}`;
+      case ProducerErrorCode.OutOfMemory:
+        return `Not enough memory for ${value} instruments (32-bit Wasm memory is limited to 4 GiB)`;
       default:
         return `producer.wasm returned unknown error code ${code as number}`;
     }

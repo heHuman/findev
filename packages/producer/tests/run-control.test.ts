@@ -48,8 +48,7 @@ describe("run control: seeding and init", () => {
   });
 
   it.each([
-    [0, 42, "instrumentCount must be an integer from 1 to 50, got 0"],
-    [51, 42, "instrumentCount must be an integer from 1 to 50, got 51"],
+    [0, 42, "instrumentCount must be an integer of at least 1, got 0"],
     [5, -1, "seed must be an integer from 0 to Number.MAX_SAFE_INTEGER (2^53 - 1), got -1"],
     [5, 1.5, "seed must be an integer from 0 to Number.MAX_SAFE_INTEGER (2^53 - 1), got 1.5"],
   ])("init(%d, %d) is rejected with a readable ProducerError", (instrumentCount, seed, message) => {
@@ -59,7 +58,7 @@ describe("run control: seeding and init", () => {
 
   it("a failed init leaves the current run working", async () => {
     producer.init(instrumentCount, seed);
-    expect(() => producer.init(51, 7)).toThrow(ProducerError);
+    expect(() => producer.init(0, 7)).toThrow(ProducerError);
     expect(() => producer.init(5, -1)).toThrow(ProducerError);
 
     // The producer kept creating trades and they are equal ot uninterrupted run with the same seed

@@ -1,6 +1,5 @@
 import {
   MAX_BATCH as MAX_BATCH_,
-  MAX_INSTRUMENTS as MAX_INSTRUMENTS_,
   MAX_MID_PRICE_CENTS,
   MIN_MID_PRICE_CENTS as MIN_MID_PRICE_CENTS_,
   OUT_BUFFER_PTR,
@@ -8,6 +7,7 @@ import {
   getInstrumentCount,
   getMidPrice,
   getMaxMidPriceStep,
+  reserveStateMemory,
   restart,
   setMidPrice,
   simulateTrade,
@@ -15,7 +15,6 @@ import {
 
 // Limits and layout, exported as read-only Wasm globals (read with `.value` in JS).
 export const MAX_BATCH: i32 = MAX_BATCH_;
-export const MAX_INSTRUMENTS: i32 = MAX_INSTRUMENTS_;
 export const TRADE_UPDATE_I32_FIELD_COUNT: i32 = TRADE_UPDATE_I32_FIELD_COUNT_;
 export const MIN_MID_PRICE_CENTS: i32 = MIN_MID_PRICE_CENTS_;
 
@@ -26,14 +25,17 @@ const ERR_NOT_INITIALIZED: i32 = -3;
 const ERR_INSTRUMENT_INDEX: i32 = -4;
 const ERR_MID_RANGE: i32 = -5;
 const ERR_SEED: i32 = -6;
+const ERR_OUT_OF_MEMORY: i32 = -7;
 
 /** Largest integer a JS number holds exactly: 2^53 - 1 (Number.MAX_SAFE_INTEGER). */
 const MAX_SEED: f64 = 9_007_199_254_740_991;
 
 export function init(instrumentCount: i32, seed: f64): i32 {
-  if (instrumentCount < 1 || instrumentCount > MAX_INSTRUMENTS) return ERR_INSTRUMENT_COUNT;
+  if (instrumentCount < 1) return ERR_INSTRUMENT_COUNT;
   // `!(seed >= 0)` also rejects NaN, since every comparison with NaN is false.
   if (!(seed >= 0) || seed > MAX_SEED || Math.trunc(seed) != seed) return ERR_SEED;
+  // Last check: it may grow memory, but it never changes the current run.
+  if (!reserveStateMemory(instrumentCount)) return ERR_OUT_OF_MEMORY;
   restart(instrumentCount, <i64>seed);
   return OK;
 }

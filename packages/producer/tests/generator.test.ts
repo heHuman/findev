@@ -37,6 +37,7 @@ describe("generator", () => {
     [1, 1],
     [5, 42],
     [50, 2024],
+    [51, 7], // more than the 50 named tickers: there is no upper limit
   ])("every update is valid with %i instrument(s) (seed %i), all instruments appear, and trades hit both bid and ask", (instrumentCount, seed) => {
     producer.init(instrumentCount, seed);
     const seen = new Set<number>();
