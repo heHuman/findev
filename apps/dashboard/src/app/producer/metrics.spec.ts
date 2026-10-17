@@ -1,6 +1,10 @@
 import { MarketUpdate, TICKERS } from '@findev/producer';
-import { emptyInstrumentRows } from '../dashboard/instrument-row';
-import { accumulateBatch, createAccumulators, deriveRow } from './metrics';
+import {
+  accumulateBatch,
+  createAccumulators,
+  deriveMetrics,
+  emptyInstrumentMetrics,
+} from './metrics';
 import { encodeUpdates } from './testing/encode-updates';
 
 describe('metrics', () => {
@@ -51,38 +55,35 @@ describe('metrics', () => {
     askQty: 100,
   };
 
-  const rowOf = (accumulators: Float64Array, index: number) =>
-    deriveRow(accumulators, index, TICKERS[index]);
-
   it('computes the worked example', () => {
     const accumulators = createAccumulators(INSTRUMENT_COUNT);
     accumulateBatch(accumulators, WORKED_EXAMPLE.batch);
 
-    expect(rowOf(accumulators, FIRST)).toEqual(WORKED_EXAMPLE.row);
+    expect(deriveMetrics(accumulators)[FIRST]).toEqual(WORKED_EXAMPLE.row);
   });
 
   it('shows unavailable values and zero volume before any trade', () => {
     const accumulators = createAccumulators(INSTRUMENT_COUNT);
 
-    expect([rowOf(accumulators, FIRST), rowOf(accumulators, SECOND)]).toEqual(
-      emptyInstrumentRows(INSTRUMENT_COUNT),
-    );
+    expect(deriveMetrics(accumulators)).toEqual(emptyInstrumentMetrics(INSTRUMENT_COUNT));
   });
 
   it('shows an unavailable imbalance when both book quantities are zero', () => {
     const accumulators = createAccumulators(INSTRUMENT_COUNT);
     accumulateBatch(accumulators, encodeUpdates([{ ...TRADE, bidQty: 0, askQty: 0 }]));
 
-    const row = rowOf(accumulators, FIRST);
-    expect(row.imbalance).toBeNull();
-    expect(row.vwapCents).toBe(TRADE.priceCents);
+    const metrics = deriveMetrics(accumulators)[FIRST];
+    expect(metrics.imbalance).toBeNull();
+    expect(metrics.vwapCents).toBe(TRADE.priceCents);
   });
 
   it('keeps instruments separate', () => {
     const accumulators = createAccumulators(INSTRUMENT_COUNT);
     accumulateBatch(accumulators, WORKED_EXAMPLE.batch);
 
-    expect(rowOf(accumulators, SECOND)).toEqual(emptyInstrumentRows(INSTRUMENT_COUNT)[SECOND]);
+    expect(deriveMetrics(accumulators)[SECOND]).toEqual(
+      emptyInstrumentMetrics(INSTRUMENT_COUNT)[SECOND],
+    );
   });
 
   it('counts every trade once across batches, and never counts book quantities', () => {
@@ -97,6 +98,6 @@ describe('metrics', () => {
     }
 
     const totalQty = TRADE_QTYS.flat().reduce((sum, qty) => sum + qty, 0);
-    expect(rowOf(accumulators, FIRST).cumulativeVolume).toBe(totalQty);
+    expect(deriveMetrics(accumulators)[FIRST].cumulativeVolume).toBe(totalQty);
   });
 });

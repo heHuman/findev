@@ -1,15 +1,9 @@
 import { MarketUpdate, MAX_BATCH, TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
 import { ProducerSettings } from '../settings/producer-settings';
-import { createAccumulators } from './metrics';
+import { emptyInstrumentMetrics } from './metrics';
 import { ProducerController, scheduleInterval } from './producer-controller';
 import { Engine } from './producer-engine';
-import {
-  ProducerCommand,
-  ProducerEvent,
-  SNAPSHOT_FIELD,
-  SnapshotEvent,
-  StartCommand,
-} from './producer-events';
+import { ProducerCommand, ProducerEvent, SnapshotEvent, StartCommand } from './producer-events';
 import { encodeUpdates } from './testing/encode-updates';
 
 // Every generated update is this trade on the first instrument, so volume is easy to predict.
@@ -73,12 +67,12 @@ describe('ProducerController', () => {
   const volumeAfter = (batches: number) => batches * SETTINGS.updatesPerBatch * TRADE.tradeQty;
 
   let engine: FakeEngine;
-  let posted: { event: ProducerEvent; transfer: Transferable[] }[];
+  let events: ProducerEvent[];
 
   beforeEach(() => {
     vi.useFakeTimers();
     engine = new FakeEngine();
-    posted = [];
+    events = [];
   });
 
   afterEach(() => {
@@ -89,7 +83,7 @@ describe('ProducerController', () => {
     new ProducerController({
       engine: loading,
       scheduleRepeating: scheduleInterval,
-      post: (event, transfer = []) => posted.push({ event, transfer }),
+      post: (event) => events.push(event),
     });
   // Runs the pending timers in `ms`, and settles promises (such as the engine loading).
   const advance = (ms = 0) => vi.advanceTimersByTimeAsync(ms);
@@ -99,23 +93,22 @@ describe('ProducerController', () => {
     return controller;
   }
 
-  const events = () => posted.map(({ event }) => event);
-  const lastEvent = () => events().at(-1);
-  const snapshots = () => events().filter((event) => event.type === 'snapshot');
+  const lastEvent = () => events.at(-1);
+  const snapshots = () => events.filter((event) => event.type === 'snapshot');
   const lastSnapshot = () => snapshots().at(-1)!;
-  const firstVolume = (snapshot: SnapshotEvent) => snapshot.data[SNAPSHOT_FIELD.volume];
+  const firstVolume = (snapshot: SnapshotEvent) => snapshot.metrics[0].cumulativeVolume;
 
   it('posts ready once the engine has loaded', async () => {
     await readyController();
 
-    expect(events()).toEqual([{ type: 'ready' }]);
+    expect(events).toEqual([{ type: 'ready' }]);
   });
 
   it('reports a failed load as an init error with the loader message', async () => {
     createController(Promise.reject(new Error(LOAD_ERROR)));
     await advance();
 
-    expect(events()).toEqual([{ type: 'error', phase: 'init', message: LOAD_ERROR }]);
+    expect(events).toEqual([{ type: 'error', phase: 'init', message: LOAD_ERROR }]);
   });
 
   it('starts a run: inits the engine, posts running and an empty snapshot', async () => {
@@ -123,7 +116,7 @@ describe('ProducerController', () => {
     controller.handle(start());
 
     expect(engine.inits).toEqual([{ instrumentCount: SETTINGS.instrumentCount, seed: SEED }]);
-    expect(events().slice(1)).toEqual([
+    expect(events.slice(1)).toEqual([
       { type: 'status', runId: RUN_ID, state: 'running' },
       {
         type: 'snapshot',
@@ -131,7 +124,7 @@ describe('ProducerController', () => {
         seq: 0,
         totalUpdates: 0,
         batches: 0,
-        data: createAccumulators(SETTINGS.instrumentCount),
+        instruments: emptyInstrumentMetrics(SETTINGS.instrumentCount),
       },
     ]);
   });
@@ -195,7 +188,7 @@ describe('ProducerController', () => {
     controller.handle(pause());
     controller.handle(pause());
 
-    const statuses = events().filter((event) => event.type === 'status');
+    const statuses = events.filter((event) => event.type === 'status');
     expect(statuses.map((status) => status.state)).toEqual(['running', 'paused']);
   });
 
@@ -204,7 +197,7 @@ describe('ProducerController', () => {
     controller.handle(start());
     await advance(INTERVAL_MS);
     controller.handle(pause());
-    const postedBeforeNewRun = posted.length;
+    const postedBeforeNewRun = events.length;
 
     controller.handle(start(NEW_RUN_ID, NEW_SEED));
     expect(engine.inits.at(-1)).toEqual({
@@ -217,14 +210,14 @@ describe('ProducerController', () => {
       seq: 0,
       totalUpdates: 0,
       batches: 0,
-      data: createAccumulators(SETTINGS.instrumentCount),
+      instruments: emptyInstrumentMetrics(SETTINGS.instrumentCount),
     });
 
     await advance(INTERVAL_MS);
     expect(lastSnapshot()).toMatchObject({ runId: NEW_RUN_ID, batches: 1 });
     expect(firstVolume(lastSnapshot())).toBe(volumeAfter(1));
     // Nothing from the replaced run is posted after the new start.
-    const newRunEvents = events().slice(postedBeforeNewRun);
+    const newRunEvents = events.slice(postedBeforeNewRun);
     expect(newRunEvents.every((event) => 'runId' in event && event.runId === NEW_RUN_ID)).toBe(
       true,
     );
@@ -256,29 +249,26 @@ describe('ProducerController', () => {
     const controller = createController(new Promise((resolve) => (finishLoading = resolve)));
     controller.handle(start(RUN_ID, SEED));
     controller.handle(start(NEW_RUN_ID, NEW_SEED));
-    expect(events()).toEqual([]);
+    expect(events).toEqual([]);
 
     finishLoading(engine);
     await advance();
 
     expect(engine.inits).toEqual([{ instrumentCount: SETTINGS.instrumentCount, seed: NEW_SEED }]);
-    expect(events().map((event) => event.type)).toEqual(['ready', 'status', 'snapshot']);
+    expect(events.map((event) => event.type)).toEqual(['ready', 'status', 'snapshot']);
     expect(lastSnapshot().runId).toBe(NEW_RUN_ID);
   });
 
-  it('posts each snapshot as a copy and transfers its buffer', async () => {
+  it('keeps a posted snapshot unchanged when later batches arrive', async () => {
     const controller = await readyController();
     controller.handle(start());
     await advance(INTERVAL_MS);
+    const earlier = lastSnapshot();
 
-    // Spoiling a posted snapshot must not affect the worker's own accumulators.
-    lastSnapshot().data.fill(0);
     await advance(INTERVAL_MS);
 
+    expect(firstVolume(earlier)).toBe(volumeAfter(1));
     expect(firstVolume(lastSnapshot())).toBe(volumeAfter(2));
-    for (const { event, transfer } of posted.filter(({ event }) => event.type === 'snapshot')) {
-      expect(transfer).toEqual([(event as SnapshotEvent).data.buffer]);
-    }
   });
 
   it('stops the run and posts a generate error when a batch fails', async () => {
@@ -299,7 +289,7 @@ describe('ProducerController', () => {
       phase: 'generate',
       message: GENERATE_ERROR,
     });
-    expect(events().filter((event) => event.type === 'error')).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'error')).toHaveLength(1);
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -307,13 +297,13 @@ describe('ProducerController', () => {
     const controller = await readyController();
     controller.handle(start());
     controller.handle({ type: 'dispose' });
-    const postedBeforeDispose = posted.length;
+    const postedBeforeDispose = events.length;
 
     controller.handle(start(NEW_RUN_ID));
     await advance(MANY_INTERVALS * INTERVAL_MS);
 
     expect(engine.inits).toHaveLength(1);
     expect(engine.batchSizes).toEqual([]);
-    expect(posted).toHaveLength(postedBeforeDispose);
+    expect(events).toHaveLength(postedBeforeDispose);
   });
 });

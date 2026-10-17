@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TICKERS } from '@findev/producer';
+import { emptyInstrumentMetrics } from '../../producer/metrics';
+import { InstrumentMetrics } from '../../producer/producer-events';
 import { UNAVAILABLE } from '../formatting/unavailable';
-import { emptyInstrumentRows, InstrumentRow } from '../instrument-row';
 import { InstrumentsTableComponent } from './instruments-table.component';
 
 describe('InstrumentsTableComponent', () => {
   const EMPTY_ROW_COUNT = 3;
 
-  const WORKED_EXAMPLE: InstrumentRow = {
+  const WORKED_EXAMPLE: InstrumentMetrics = {
     ticker: TICKERS[0]!,
     lastPriceCents: 10200,
     spreadCents: 4,
@@ -29,7 +30,7 @@ describe('InstrumentsTableComponent', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({ imports: [InstrumentsTableComponent] });
     fixture = TestBed.createComponent(InstrumentsTableComponent);
-    fixture.componentRef.setInput('rows', emptyInstrumentRows(EMPTY_ROW_COUNT));
+    fixture.componentRef.setInput('rows', emptyInstrumentMetrics(EMPTY_ROW_COUNT));
     await fixture.whenStable();
   });
 

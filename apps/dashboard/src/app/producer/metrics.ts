@@ -1,6 +1,17 @@
-import { FIELD_OFFSETS, TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
-import { InstrumentRow } from '../dashboard/instrument-row';
-import { SNAPSHOT_FIELD, SNAPSHOT_FIELD_COUNT } from './producer-events';
+import { FIELD_OFFSETS, TICKERS, TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
+import { InstrumentMetrics } from './producer-events';
+
+const SNAPSHOT_FIELD = {
+  lastPriceCents: 0,
+  bidCents: 1,
+  askCents: 2,
+  bidQty: 3,
+  askQty: 4,
+  volume: 5,
+  notionalCents: 6,
+} as const;
+
+const SNAPSHOT_FIELD_COUNT = Object.keys(SNAPSHOT_FIELD).length;
 
 export function createAccumulators(instrumentCount: number): Float64Array {
   const accumulators = new Float64Array(instrumentCount * SNAPSHOT_FIELD_COUNT);
@@ -31,9 +42,31 @@ export function accumulateBatch(accumulators: Float64Array, updates: Int32Array)
   }
 }
 
-export function deriveRow(snapshot: Float64Array, index: number, ticker: string): InstrumentRow {
+export function deriveMetrics(accumulators: Float64Array): InstrumentMetrics[] {
+  const instrumentCount = accumulators.length / SNAPSHOT_FIELD_COUNT;
+  return TICKERS.slice(0, instrumentCount).map((ticker, index) =>
+    deriveInstrumentMetrics(accumulators, index, ticker),
+  );
+}
+
+export function emptyInstrumentMetrics(instrumentCount: number): InstrumentMetrics[] {
+  return TICKERS.slice(0, instrumentCount).map((ticker) => ({
+    ticker,
+    lastPriceCents: null,
+    spreadCents: null,
+    cumulativeVolume: 0,
+    vwapCents: null,
+    imbalance: null,
+  }));
+}
+
+function deriveInstrumentMetrics(
+  accumulators: Float64Array,
+  index: number,
+  ticker: string,
+): InstrumentMetrics {
   const base = index * SNAPSHOT_FIELD_COUNT;
-  const field = (offset: number) => snapshot[base + offset];
+  const field = (offset: number) => accumulators[base + offset];
 
   const bidQty = field(SNAPSHOT_FIELD.bidQty);
   const askQty = field(SNAPSHOT_FIELD.askQty);

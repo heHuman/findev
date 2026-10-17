@@ -1,6 +1,6 @@
 import { TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
 import { ProducerSettings } from '../settings/producer-settings';
-import { accumulateBatch, createAccumulators } from './metrics';
+import { accumulateBatch, createAccumulators, deriveMetrics } from './metrics';
 import { Engine } from './producer-engine';
 import {
   PauseCommand,
@@ -22,7 +22,7 @@ export const scheduleInterval: ScheduleRepeating = (callback, intervalMs) => {
 export interface ProducerControllerDeps {
   engine: Promise<Engine>;
   scheduleRepeating: ScheduleRepeating;
-  post: (event: ProducerEvent, transfer?: Transferable[]) => void;
+  post: (event: ProducerEvent) => void;
 }
 
 type RunCommand = StartCommand | PauseCommand | ResumeCommand;
@@ -198,7 +198,12 @@ export class ProducerController {
       // The interval would otherwise keep firing for a run that no longer exists
       this.#stopTicking();
       this.#run = null;
-      this.#post({ type: 'error', runId: run.id, phase: 'generate', message: this.#getErrorMessage(error) });
+      this.#post({
+        type: 'error',
+        runId: run.id,
+        phase: 'generate',
+        message: this.#getErrorMessage(error),
+      });
       return;
     }
 
@@ -208,18 +213,14 @@ export class ProducerController {
   }
 
   #postSnapshot(run: Run): void {
-    const data = run.accumulators.slice();
-    this.#post(
-      {
-        type: 'snapshot',
-        runId: run.id,
-        seq: run.seq,
-        totalUpdates: run.totalUpdates,
-        batches: run.batches,
-        data,
-      },
-      [data.buffer],
-    );
+    this.#post({
+      type: 'snapshot',
+      runId: run.id,
+      seq: run.seq,
+      totalUpdates: run.totalUpdates,
+      batches: run.batches,
+      metrics: deriveMetrics(run.accumulators),
+    });
     run.seq += 1;
   }
 
@@ -227,4 +228,3 @@ export class ProducerController {
     return error instanceof Error ? error.message : String(error);
   }
 }
-

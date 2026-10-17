@@ -35,13 +35,26 @@ export interface StatusEvent {
   state: RunState;
 }
 
+// The display values of one instrument; null means unavailable
+export interface InstrumentMetrics {
+  ticker: string;
+  lastPriceCents: number | null;
+  // askPrice − bidPrice
+  spreadCents: number | null;
+  cumulativeVolume: number;
+  // sum(tradePrice × tradeQuantity) / sum(tradeQuantity) since the run started
+  vwapCents: number | null;
+  // Latest (bidQuantity − askQuantity) / (bidQuantity + askQuantity)
+  imbalance: number | null;
+}
+
 export interface SnapshotEvent {
   type: 'snapshot';
   runId: number;
   seq: number;
   totalUpdates: number;
   batches: number;
-  data: Float64Array;
+  metrics: InstrumentMetrics[];
 }
 
 export interface ProducerErrorEvent {
@@ -52,15 +65,3 @@ export interface ProducerErrorEvent {
 }
 
 export type ProducerEvent = ReadyEvent | StatusEvent | SnapshotEvent | ProducerErrorEvent;
-
-export const SNAPSHOT_FIELD = {
-  lastPriceCents: 0,
-  bidCents: 1,
-  askCents: 2,
-  bidQty: 3,
-  askQty: 4,
-  volume: 5,
-  notionalCents: 6,
-} as const;
-
-export const SNAPSHOT_FIELD_COUNT = Object.keys(SNAPSHOT_FIELD).length;

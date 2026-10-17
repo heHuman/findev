@@ -10,7 +10,7 @@ const wasmUrl = new URL('producer.wasm', self.location.href);
 const controller = new ProducerController({
   engine: loadWasmEngine(wasmUrl),
   scheduleRepeating: scheduleInterval,
-  post: (event, transfer = []) => postMessage(event, transfer),
+  post: (event) => postMessage(event),
 });
 
 addEventListener('message', (event: MessageEvent<ProducerCommand>) =>

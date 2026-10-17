@@ -1,8 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ImbalancePipe } from '../formatting/imbalance.pipe';
+import { InstrumentMetrics } from '../../producer/producer-events';
 import { PricePipe } from '../formatting/price.pipe';
-import { InstrumentRow } from '../instrument-row';
 
 @Component({
   selector: 'app-instruments-table',
@@ -12,5 +12,5 @@ import { InstrumentRow } from '../instrument-row';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InstrumentsTableComponent {
-  readonly rows = input.required<readonly InstrumentRow[]>();
+  readonly rows = input.required<readonly InstrumentMetrics[]>();
 }
