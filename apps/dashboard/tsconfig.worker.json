@@ -1,0 +1,13 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+// Web workers are type-checked with the WebWorker lib instead of the DOM lib, so worker code can't
+// reach for `document` or `window` by mistake. Files they import (protocol, controller, metrics)
+// are checked by both this config and the app/spec configs, so they must stay environment-neutral.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2022", "webworker"],
+    "types": []
+  },
+  "include": ["src/**/*.worker.ts"]
+}

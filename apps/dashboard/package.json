@@ -3,9 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "build:wasm": "npm run build -w @findev/producer && node -e \"require('node:fs').copyFileSync('../../packages/producer/build/producer.wasm', 'public/producer.wasm')\"",
+    "prestart": "npm run build:wasm",
     "start": "ng serve",
+    "prebuild": "npm run build:wasm",
     "build": "ng build",
+    "prewatch": "npm run build:wasm",
     "watch": "ng build --watch --configuration development",
+    "pretest": "npm run build:wasm",
     "test": "ng test --watch=false"
   },
   "private": true,
