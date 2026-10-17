@@ -1,4 +1,4 @@
-import { MarketUpdate, TICKERS } from '@findev/producer';
+import { MarketUpdate, tickerOf } from '@findev/producer';
 import {
   accumulateBatch,
   createAccumulators,
@@ -36,7 +36,7 @@ describe('metrics', () => {
       },
     ]),
     row: {
-      ticker: TICKERS[FIRST],
+      ticker: tickerOf(FIRST),
       lastPriceCents: 10200,
       spreadCents: 4,
       cumulativeVolume: 40,

@@ -1,6 +1,6 @@
 import { createEnvironmentInjector, EnvironmentInjector, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { MarketUpdate, TICKERS } from '@findev/producer';
+import { MarketUpdate, tickerOf } from '@findev/producer';
 import { DEFAULT_PRODUCER_SETTINGS, ProducerSettings } from '../settings/producer-settings';
 import { ProducerSettingsStore } from '../settings/producer-settings-store';
 import {
@@ -52,7 +52,7 @@ describe('ProducerService', () => {
     },
   ];
   const WORKED_EXAMPLE_ROW: InstrumentMetrics = {
-    ticker: TICKERS[FIRST],
+    ticker: tickerOf(FIRST),
     lastPriceCents: 10200,
     spreadCents: 4,
     cumulativeVolume: 40,

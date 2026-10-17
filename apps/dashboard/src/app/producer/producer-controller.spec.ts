@@ -124,7 +124,7 @@ describe('ProducerController', () => {
         seq: 0,
         totalUpdates: 0,
         batches: 0,
-        instruments: emptyInstrumentMetrics(SETTINGS.instrumentCount),
+        metrics: emptyInstrumentMetrics(SETTINGS.instrumentCount),
       },
     ]);
   });
@@ -210,7 +210,7 @@ describe('ProducerController', () => {
       seq: 0,
       totalUpdates: 0,
       batches: 0,
-      instruments: emptyInstrumentMetrics(SETTINGS.instrumentCount),
+      metrics: emptyInstrumentMetrics(SETTINGS.instrumentCount),
     });
 
     await advance(INTERVAL_MS);

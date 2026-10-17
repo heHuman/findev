@@ -1,4 +1,4 @@
-import { FIELD_OFFSETS, TICKERS, TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
+import { FIELD_OFFSETS, tickersFor, TRADE_UPDATE_I32_FIELD_COUNT } from '@findev/producer';
 import { InstrumentMetrics } from './producer-events';
 
 const SNAPSHOT_FIELD = {
@@ -44,13 +44,13 @@ export function accumulateBatch(accumulators: Float64Array, updates: Int32Array)
 
 export function deriveMetrics(accumulators: Float64Array): InstrumentMetrics[] {
   const instrumentCount = accumulators.length / SNAPSHOT_FIELD_COUNT;
-  return TICKERS.slice(0, instrumentCount).map((ticker, index) =>
+  return tickersFor(instrumentCount).map((ticker, index) =>
     deriveInstrumentMetrics(accumulators, index, ticker),
   );
 }
 
 export function emptyInstrumentMetrics(instrumentCount: number): InstrumentMetrics[] {
-  return TICKERS.slice(0, instrumentCount).map((ticker) => ({
+  return tickersFor(instrumentCount).map((ticker) => ({
     ticker,
     lastPriceCents: null,
     spreadCents: null,

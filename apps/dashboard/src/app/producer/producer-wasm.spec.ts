@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs';
-import { TICKERS } from '@findev/producer';
+import { tickersFor } from '@findev/producer';
 import { ProducerSettings } from '../settings/producer-settings';
 import { ProducerController, scheduleInterval } from './producer-controller';
 import { loadWasmEngine } from './producer-engine';
@@ -47,7 +47,7 @@ describe('ProducerController with the real Wasm engine', () => {
       batches: BATCH_COUNT,
       totalUpdates: BATCH_COUNT * SETTINGS.updatesPerBatch,
     });
-    expect(rows.map((row) => row.ticker)).toEqual(TICKERS.slice(0, SETTINGS.instrumentCount));
+    expect(rows.map((row) => row.ticker)).toEqual(tickersFor(SETTINGS.instrumentCount));
     expect(totalVolume).toBeGreaterThanOrEqual(last.totalUpdates);
     for (const row of rows) {
       expect(row.spreadCents).toBeGreaterThan(0);

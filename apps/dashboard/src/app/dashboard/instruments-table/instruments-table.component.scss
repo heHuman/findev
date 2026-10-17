@@ -1,18 +1,23 @@
 :host {
   display: block;
-  --row-height: 36px;
 }
 
 .table {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 8px;
 }
 
+.header,
+.body {
+  scrollbar-gutter: stable;
+}
+
 .header {
-  position: sticky;
-  top: 0;
+  flex: none;
+  overflow: hidden;
   background-color: var(--mat-sys-surface-container);
   color: var(--mat-sys-on-surface-variant);
   font: var(--mat-sys-title-small);

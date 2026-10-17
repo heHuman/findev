@@ -1,11 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MarketUpdate, TICKERS } from '@findev/producer';
+import { By } from '@angular/platform-browser';
+import { MarketUpdate, tickersFor } from '@findev/producer';
 import { accumulateBatch, createAccumulators, deriveMetrics } from '../producer/metrics';
 import { ProducerService } from '../producer/producer.service';
 import { encodeUpdates } from '../producer/testing/encode-updates';
 import { provideFakeProducerWorker } from '../producer/testing/fake-producer-worker';
 import { DEFAULT_PRODUCER_SETTINGS, PRODUCER_SETTINGS_LIMITS } from '../settings/producer-settings';
 import { DashboardComponent } from './dashboard.component';
+import { InstrumentsTableComponent } from './instruments-table/instruments-table.component';
 
 describe('DashboardComponent', () => {
   const MAX_APPLIED_INSTRUMENT_COUNT = PRODUCER_SETTINGS_LIMITS.instrumentCount.max;
@@ -48,12 +50,17 @@ describe('DashboardComponent', () => {
     Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.trim() === label);
   const pauseToggle = () => host().querySelector<HTMLButtonElement>('.pause-toggle')!;
   const tickers = () =>
-    Array.from(host().querySelectorAll('.body [role="row"] .ticker')).map((cell) =>
+    Array.from(host().querySelectorAll('.body .row .ticker')).map((cell) =>
       cell.textContent?.trim(),
     );
+  const tableRows = () =>
+    fixture.debugElement
+      .query(By.directive(InstrumentsTableComponent))
+      .injector.get(InstrumentsTableComponent)
+      .rows();
   const firstRowCells = () =>
-    Array.from(host().querySelectorAll('.body [role="row"]:first-child [role="cell"]')).map(
-      (cell) => cell.textContent?.trim(),
+    Array.from(host().querySelectorAll('.body .row:first-child .cell')).map((cell) =>
+      cell.textContent?.trim(),
     );
 
   // The worker loads the Wasm, confirms the run, and posts one batch with TRADE.
@@ -74,9 +81,11 @@ describe('DashboardComponent', () => {
   }
 
   it('shows a row for each instrument in the default settings', () => {
-    expect(tickers()).toEqual(TICKERS.slice(0, DEFAULT_PRODUCER_SETTINGS.instrumentCount));
+    expect(tickers()).toEqual(tickersFor(DEFAULT_PRODUCER_SETTINGS.instrumentCount));
   });
 
+  // The maximum is more than the named tickers, so the last rows get generated ones (I0050, ...).
+  // The table renders only a window of them, so check the rows it gets.
   it('shows the new number of rows after settings are applied', async () => {
     TestBed.inject(ProducerService).apply({
       ...DEFAULT_PRODUCER_SETTINGS,
@@ -84,7 +93,7 @@ describe('DashboardComponent', () => {
     });
     await fixture.whenStable();
 
-    expect(tickers()).toEqual(TICKERS.slice(0, MAX_APPLIED_INSTRUMENT_COUNT));
+    expect(tableRows().map((row) => row.ticker)).toEqual(tickersFor(MAX_APPLIED_INSTRUMENT_COUNT));
   });
 
   it('shows the values from the latest snapshot in the table', async () => {
