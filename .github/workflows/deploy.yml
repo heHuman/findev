@@ -1,0 +1,83 @@
+# Build, test and deploy the dashboard to GitHub Pages.
+# - push to main:      test + build + deploy
+# - pull request:      test + build only (no deploy)
+# - workflow_dispatch: manual re-run (deploys when run on main)
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default; jobs widen this where they need to.
+permissions:
+  contents: read
+
+env:
+  DIST: apps/dashboard/dist/dashboard/browser
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read # configure-pages reads the site's base path
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Producer (Wasm) + dashboard suites; each workspace's pretest builds the Wasm.
+      - run: npm test
+
+      # Reads the Pages URL, e.g. base_path "/findev" for https://<user>.github.io/findev.
+      # Allowed to fail (e.g. Pages not enabled yet, or a fork PR) so build/test still run.
+      - id: pages
+        uses: actions/configure-pages@v6
+        continue-on-error: true
+
+      - name: Build dashboard
+        env:
+          PAGES_OK: ${{ steps.pages.outcome == 'success' }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          # base_path is "/<repo>" for a project site, "" for a user site / custom domain.
+          if [ "$PAGES_OK" = "true" ]; then BASE="$PAGES_BASE_PATH"; else BASE="/$REPO_NAME"; fi
+          BASE="${BASE%/}/"   # exactly one trailing slash
+          echo "base href: $BASE"
+          npm run build -w @findev/dashboard -- --base-href "$BASE"
+
+      # SPA fallback: Pages serves 404.html for unknown paths, so deep links
+      # like /<repo>/settings boot the app and the Angular router takes over.
+      - run: cp "$DIST/index.html" "$DIST/404.html"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ env.DIST }}
+
+  deploy:
+    needs: build
+    # Never on pull requests; only pushes / manual runs on main.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # One Pages deployment at a time; a running deploy is never cut off by a newer push.
+    # (Job-level, so PR runs don't queue behind or displace a pending deploy.)
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
